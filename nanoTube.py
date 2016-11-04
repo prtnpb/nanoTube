@@ -262,6 +262,8 @@ class initStructure:
     self.width1=list(copy.deepcopy(self.width))
 
 
+  #CHANGE SUBSEQUENT POSITIONS TO DERIVED ROTATIONS AND SHIFTS
+
   def setinitPos2(self):
     '''
     This function rotates about the y-axis and then the z-axis. Then shifts
