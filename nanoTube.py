@@ -229,6 +229,9 @@ class initStructure:
     self.orientpos5=[]
     self.orientpos6=[]
 
+    # List of the cell widths in cartesian coordinates. Note that there may
+    #   be multiple sets in here to correspond to rotations about the face
+    #   facing the origin.
     self.width1=[]
     self.width2=[]
     self.width3=[]
