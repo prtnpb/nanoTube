@@ -1,0 +1,108 @@
+nanoTube.py Input Control File README
+
+The format is very straightforward and contains a couple of key words 
+that have to be in place for the program to work.
+IN, TUBERAD, HEIGHT, CHIRALITY, FUNCTIONALIZATION, OUT
+
+IN 
+  IN should be followed on the next line by either list or file.
+
+  file
+    If file is used, then the next line should contain the path 
+    to the file wanting to be used as the invariant replicable 
+    structure to build the nanotube out of.
+
+  list
+    If list is used, the next line should be the cell lengths and cell angles.
+    e.g. a b c A B C then followed by each atomic symbol and the
+    corresponding atomic cartesian positions.
+
+TUBERAD
+  TUBERAD should be followed on the next line by two integers that
+  specify the range of replicated cells to be used.
+  e.g. 15 80 would calculated a range of nanotubes using 15 replicated
+  cells and increasing by one until the final model would be 80 cells.
+  These values directly control the radius of the nanotube via rules
+  of polygon geometry. Default values is 15 80. If one is only trying
+  to create one model, then use the same number twice, e.g. 20 20.
+
+HEIGHT
+  In most cases, because we want to calculate with z-periodicity, the 
+  shortest possible tube is best. However, sometimes if the functionalized 
+  nanoparticle is too large or for graphic model purposes, one may want 
+  to make a longer nanotube model. An integer value 1,2,...,n should be 
+  used on the next line to specify how many times to replicate the tube 
+  in the z-direction. NOTE: Default value is one.
+
+CHIRALITY
+  The value on the next line should be a decimal representing the fraction 
+  of the initial unit cell height in the z direction that should be 
+  increased by the time the nanotube reaches 2*pi in its creation.
+  Note: Default value is 1.
+
+FUNCTIONALIZATION
+  FUNCTIONALIZATION should be followed on the next line be either list
+  or file.
+
+  file
+    If file is used, then the next line should contain the path 
+    to the file of the structure that will be used to functionalize
+    the nanotube.
+
+  list
+    The lines following list can be used in a couple of ways:
+
+    If specifying a particle, then we will need the cell parameters
+    and angles as with the IN case; then followed by atomic symbols
+    and positions.
+
+    If simply using atom(s), just a list of the symbols will suffice.
+
+OUT
+  At the moment, the default output for the program is the olcao skeleton
+  file format.  However, work is being done to add in additional formats.
+
+The only absolutely required item for a minimal run is IN and it's
+  following lines. If the other items are missing, default values
+  will be used.
+
+Also, there is no prescribed order in which the main flags must appear.
+
+==========================================================================
+     E     X     A     M     P     L     E     S:
+==========================================================================
+
+
+EXAMPLE 1:
+IN
+file
+/home/jobs/OLCAO/test/inputs/olcao.mi
+HEIGHT
+1
+CHIRALITY
+1
+FUNCTIONALIZATION
+file
+/home/jobs/OLCAO/test2/inputs/olcao.mi
+OUT
+olcao.skl
+
+EXAMPLE 2:
+IN
+list
+2.9999 2.6666 3.1111 90 90 90
+si 0.0000 0.0000 0.0000
+o  1.0000 1.0000 1.0000
+o  2.0000 2.0000 2.0000
+HEIGHT
+3
+CHIRALITY
+1.5
+FUNCTIONALIZATION
+list
+0.5 0.5 0.5 90 90 90
+au 0.2500 0.2500 0.2500
+au 0.0000 0.0000 0.0000
+au 0.5000 0.0000 0.0000
+OUT
+olcao.skl
