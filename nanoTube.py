@@ -161,6 +161,12 @@ def Rotz(ang):
 
   return Rz
 
+def parseInputFile():
+  # Open Input Control File.
+  f=open('nanoInCtrl','r')
+  ctrl=f.readlines()
+  f.close()
+
 
 
 class initStructure:
