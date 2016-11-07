@@ -102,18 +102,18 @@ start=time.time()
 
   Rotation 2:
    For this rotation, we do the following:
-     1) Rotate by pi/2 about the y-axis
-     2) Rotate by pi about the z-axis
-     3) Add initial y-width/2 to all atomic positions
 
   Rotation 3:
     For this rotation, we do the following:
-      1) Rotate about the x-axis by pi/2
-      2) Shift by the initial z-width/2
 
   Rotation 4:
     For this rotation, we do the following:
-      1)
+
+  Rotation 5:
+    For this rotation, we do the following:
+
+  Rotation 6:
+    For this rotation, we do the following:
 '''
 
 # Rotation about x-axis clockwise by angle ang
