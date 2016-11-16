@@ -1,5 +1,7 @@
 nanoTube.py Input Control File README
 
+The name of the file should be 'nanoInCtrl'
+
 The format is very straightforward and contains a couple of key words 
 that have to be in place for the program to work.
 NAME, IN, TUBERAD, HEIGHT, CHIRALITY, FUNCTIONALIZATION, OUT, END
