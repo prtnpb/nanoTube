@@ -49,6 +49,14 @@ CHIRALITY
   Note: Default value is zero. Also, while the ability to do fractional
   chirality is in place, integer values are recommended.
 
+SCROLLING
+  SCROLLING should be followed on the next line by two numbers.
+    (1) The number of loops to make and
+    (2) how far the outward shift should be by in terms of
+        unit cell width in the x direction.
+
+   e.g.  1 1.5
+
 FUNCTIONALIZATION
   FUNCTIONALIZATION should be followed on the next line by a number
   1, 2, or 3. These values will signfiy whether the functionalization
@@ -68,7 +76,8 @@ FUNCTIONALIZATION
     and angles as with the IN case; then followed by atomic symbols
     and positions. 
 
-    If simply using atom(s), just a list of the symbols will suffice.
+    If simply using atom(s), start the line with the number of 
+    atoms and the corresponding atomic symbol.
 
 OUT
   At the moment, the default output for the program is the olcao skeleton
