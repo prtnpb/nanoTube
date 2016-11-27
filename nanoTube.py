@@ -80,6 +80,53 @@ import copy
 
 start=time.time()
 
+
+
+
+class olcaomiFile():
+  def __init__(self):
+    self.atomicList=[]
+    self.positionList=[]
+    self.cellVec=np.zeros(3,dtype='d')
+    self.cellAng=np.zeros(3,dtype='d')
+    self.fracorcart=''
+    self.numAtoms=0
+
+  def getFile(self):
+    olcaomi=open('olcao.mi','r')
+    allLines=olcaomi.readlines()
+    olcaomi.close()
+
+
+    for i in range(len(allLines)):
+
+      if len(self.atomicList)==self.numAtoms and self.numAtoms!=0:
+        break
+    
+      if allLines[i].strip()=='cell':
+        tempLine=(allLines[i+1].strip()).split()
+        self.cellVec[0]=tempLine[0]
+        self.cellVec[1]=tempLine[1]
+        self.cellVec[2]=tempLine[2]
+        self.cellAng[0]=tempLine[3]
+        self.cellAng[1]=tempLine[4]
+        self.cellAng[2]=tempLine[5]
+
+        tempLine=(allLines[i+2].strip()).split()
+        self.fracorcart=tempLine[0]
+        self.numAtoms=int(tempLine[1])        
+
+        if self.fracorcart=='cart':
+          for j in range(i+3,i+self.numAtoms+3):
+            tempLine=(allLines[j].strip()).split()
+            self.atomicList.append(tempLine[0])     
+            self.positionList.append([tempLine[1],tempLine[2],tempLine[3]])        
+        else:
+          for j in range(i+3,i+self.numAtoms+3):
+            tempLine=(allLines[j].strip()).split()
+            self.atomicList.append(tempLine[0])     
+            self.positionList.append([float(tempLine[1])*self.cellVec[0],float(tempLine[2])*self.cellVec[1],float(tempLine[3])*self.cellVec[2]])        
+
 '''
   Rotation Descriptions:
 
@@ -115,59 +162,6 @@ start=time.time()
   Rotation 6:
     For this rotation, we do the following:
 '''
-
-# Rotation about x-axis clockwise by angle ang
-def Rotx(ang):
-  Rx=np.zeros((3,3),dtype='d')
-  Rx[0,0]=1
-  Rx[1,0]=0
-  Rx[2,0]=0
-  Rx[0,1]=0
-  Rx[1,1]=np.cos(ang)
-  Rx[2,1]=np.sin(ang)
-  Rx[0,2]=0
-  Rx[1,2]=-1*np.sin(ang)
-  Rx[2,2]=np.cos(ang)
-
-  return Rx
-
-# Rotation about y-axis clockwise by angle ang
-def Roty(ang):
-  Ry=np.zeros((3,3),dtype='d')
-  Ry[0,0]=np.cos(ang)
-  Ry[1,0]=0
-  Ry[2,0]=-1*np.sin(ang)
-  Ry[0,1]=0
-  Ry[1,1]=1
-  Ry[2,1]=0
-  Ry[0,2]=np.sin(ang)
-  Ry[1,2]=0
-  Ry[2,2]=np.cos(ang)
-
-  return Ry
-
-# Rotation about z-axis clockwise by angle ang
-def Rotz(ang):
-  Rz=np.zeros((3,3),dtype='d')
-  Rz[0,0]=np.cos(ang)
-  Rz[1,0]=np.sin(ang)
-  Rz[2,0]=0
-  Rz[0,1]=-1*np.sin(ang)
-  Rz[1,1]=np.cos(ang)
-  Rz[2,1]=0
-  Rz[0,2]=0
-  Rz[1,2]=0
-  Rz[2,2]=1
-
-  return Rz
-
-def parseInputFile():
-  # Open Input Control File.
-  f=open('nanoInCtrl','r')
-  ctrl=f.readlines()
-  f.close()
-
-
 
 class initStructure:
   '''
@@ -216,15 +210,21 @@ class initStructure:
 
   '''
   
-  def __init__(self,cellx,celly,cellz,chirality,functionalize):
+  def __init__(self,cellx,celly,cellz):
     self.initPositions=[]           # List of initial positions
     self.corr_atoms=[]              # List of the atom symbols corresponding
                                     #  to initPositions.
 
     self.width=[cellx,celly,cellz]  # Initial cell dimensions
-    self.chir=chirality             # Initial chirality set to zero.
-    self.func=functionalize         # Functionalization 0=No, 1=Yes
-
+    self.chir=0                     # Initial chirality set to zero.
+    self.scrnum=1                   # Number of loops in scrolling
+    self.scrdist=0                  # Distance to extend in scrolling
+    self.func=0                     # Functionalization 0=No, 1=Yes
+    self.funcLoc=0                  # Determines whether in, out, or both
+    self.height=0                   # Number of times to replicate in
+                                    #   z-direction.
+    self.name=''                    # Name of Tube
+    self.tuberadbounds=[]           # Number of replicated cells
 
     # List of positions of each atom when each face of the parallelpiped
     #  is facing the origin.
@@ -245,6 +245,39 @@ class initStructure:
     self.width5=[]
     self.width6=[]
 
+  # Rotation about x-axis clockwise by angle ang
+  def Rotx(ang):
+    Rx=np.zeros((3,3),dtype='d')
+    Rx[0,0]=1
+    Rx[1,1]=np.cos(ang)
+    Rx[2,1]=np.sin(ang)
+    Rx[1,2]=-1*np.sin(ang)
+    Rx[2,2]=np.cos(ang)
+ 
+    return Rx
+
+  # Rotation about y-axis clockwise by angle ang
+  def Roty(ang):
+    Ry=np.zeros((3,3),dtype='d')
+    Ry[0,0]=np.cos(ang)
+    Ry[2,0]=-1*np.sin(ang)
+    Ry[1,1]=1
+    Ry[0,2]=np.sin(ang)
+    Ry[2,2]=np.cos(ang)
+ 
+    return Ry
+
+  # Rotation about z-axis clockwise by angle ang
+  def Rotz(ang):
+    Rz=np.zeros((3,3),dtype='d')
+    Rz[0,0]=np.cos(ang)
+    Rz[1,0]=np.sin(ang)
+    Rz[0,1]=-1*np.sin(ang)
+    Rz[1,1]=np.cos(ang)
+    Rz[2,2]=1
+ 
+    return Rz
+
 
 
   def addAtom(self,atom,pos):
@@ -255,6 +288,86 @@ class initStructure:
   def addEntireStructure(self,atomlist,poslist):
     self.initPositions=list(copy.deepcopy(poslist))
     self.corr_atoms=list(copy.deepcopy(atomlist))
+
+
+
+  def parseInputFile(self):
+    # Open Input Control File and read lines to list.
+    f=open('nanoInCtrl','r')
+    ctrl=f.readlines()
+    f.close()
+
+    # List of all current flags.
+    flags=['NAME','IN','TUBERAD','HEIGHT','CHIRALITY','SCROLLING','FUNCTIONALIZATION','OUT','END']
+
+
+    #Check for END
+    if flags[8] in ctrl:
+
+      # Check for NAME  
+      if flags[0] in ctrl:
+        self.name=ctrl[ctrl.index(flags[0]+1)]
+      else:
+        self.name="MODEL"        
+ 
+      # Check for IN
+      if flags[1] in ctrl:
+        # If it is a file, get the relevant information.
+        if ctrl[ctrl.index(flags[1])+1]=='file':
+          nf=olcaomiFile()
+          nf.getFile()
+          self.width=[nf.cellVec[0],nf.cellVec[1],nf.cellVec[2]]
+          addEntireStructure(nf.atomicList,nf.positionList)
+ 
+        elif ctrl[ctrl.index(flags[1])+1]=='list':
+          i=ctrl.index(flags[1])+2
+          line=ctrl[i].split()
+          self.width=[float(line[0]),float(line[1]),float(line[2])]
+          i+=1
+          while(ctrl[i] not in flags):
+            line=ctrl[i].split()        
+            addAtom(line[0],[float(line[1]),float(line[2]),float(line[3]])) 
+      else:
+        sys.exit('IN must be included in the input control file.\n')
+ 
+      # Check for TUBERAD
+      if flags[2] in ctrl:
+        self.tuberadbounds=map(int, ctrl[ctrl.index(flags[2])+1].split())
+      else:
+        self.tuberadbounds=[15,80]
+
+      # Check for HEIGHT
+      if flags[3] in ctrl:
+        self.height=int(ctrl[ctrl.index(flags[3])+1])
+
+      # Check for CHIRALITY
+      if flags[4] in ctrl:
+        self.chir=float(ctrl[ctrl.index(flags[4])+1])
+
+      # Check for SCROLLING
+      if flags[5] in ctrl:
+        line=ctrl[ctrl.index(flags[5])+1].split()
+
+        if len(line)==2:
+          self.scrdist=float(line[0])
+          self.scrnum=int(line[2])
+        else:
+          self.scrdist=float(line[0])
+ 
+      # Check for FUNCTIONALIZATION
+      if flags[6] in ctrl:
+        self.funcLoc=int(ctrl[ctrl.index(flags[6])+1]) 
+        line=ctrl[ctrl.index(float[6])+2].split()
+        
+
+      # Check for OUT
+
+    else:
+      sys.exit("END must be included in the input control file.\n" 
+
+
+
+
 
 
   def setinitPos1(self):
@@ -681,49 +794,6 @@ cell vectors, angles, atom names, positions.
 
 ''' 
 
-class olcaomiFile():
-  def __init__(self):
-    self.atomicList=[]
-    self.positionList=[]
-    self.cellVec=np.zeros(3,dtype='d')
-    self.cellAng=np.zeros(3,dtype='d')
-    self.fracorcart=''
-    self.numAtoms=0
-
-  def getFile(self):
-    olcaomi=open('olcao.mi','r')
-    allLines=olcaomi.readlines()
-    olcaomi.close()
-
-
-    for i in range(len(allLines)):
-
-      if len(self.atomicList)==self.numAtoms and self.numAtoms!=0:
-        break
-    
-      if allLines[i].strip()=='cell':
-        tempLine=(allLines[i+1].strip()).split()
-        self.cellVec[0]=tempLine[0]
-        self.cellVec[1]=tempLine[1]
-        self.cellVec[2]=tempLine[2]
-        self.cellAng[0]=tempLine[3]
-        self.cellAng[1]=tempLine[4]
-        self.cellAng[2]=tempLine[5]
-
-        tempLine=(allLines[i+2].strip()).split()
-        self.fracorcart=tempLine[0]
-        self.numAtoms=int(tempLine[1])        
-
-        if self.fracorcart=='cart':
-          for j in range(i+3,i+self.numAtoms+3):
-            tempLine=(allLines[j].strip()).split()
-            self.atomicList.append(tempLine[0])     
-            self.positionList.append([tempLine[1],tempLine[2],tempLine[3]])        
-        else:
-          for j in range(i+3,i+self.numAtoms+3):
-            tempLine=(allLines[j].strip()).split()
-            self.atomicList.append(tempLine[0])     
-            self.positionList.append([float(tempLine[1])*self.cellVec[0],float(tempLine[2])*self.cellVec[1],float(tempLine[3])*self.cellVec[2]])        
  
 
 print "Beginning Nanotube Creation\n"
@@ -741,8 +811,6 @@ Basic Idea:
 
 #Need to add in a spot to take in chirality and functionalization.
 
-newOLCAOfile=olcaomiFile()
-newOLCAOfile.getFile()
 
 newstruct=initStructure(newOLCAOfile.cellVec[0],newOLCAOfile.cellVec[1],newOLCAOfile.cellVec[2])
 newstruct.addEntireStructure(newOLCAOfile.atomicList,newOLCAOfile.positionList)
