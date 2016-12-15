@@ -74,6 +74,7 @@ import sys
 import numpy as np
 import time
 import copy
+
 #import matplotlib.pyplot as plt
 #from mpl_toolkits.mplot3d import Axes3D
 
@@ -89,12 +90,6 @@ def Rotx(ang):
   cosang=np.cos(ang)
   sinang=np.sin(ang)
 
-  if cosang < 1.0*10**-16:
-    cosang=0.0
-
-  if sinang<1.0*10**-16:
-    sinang=0.0
-
   Rx=np.zeros((3,3),dtype='d')
   Rx[0,0]=1.0
   Rx[1,1]=cosang
@@ -108,12 +103,6 @@ def Rotx(ang):
 def Roty(ang):
   cosang=np.cos(ang)
   sinang=np.sin(ang)
-
-  if cosang < 1.0*10**-16:
-    cosang=0.0
-
-  if sinang<1.0*10**-16:
-    sinang=0.0
 
   Ry=np.zeros((3,3),dtype='d')
   Ry[0,0]=cosang
@@ -129,13 +118,7 @@ def Rotz(ang):
   cosang=np.cos(ang)
   sinang=np.sin(ang)
 
-  if cosang < 1.0*10**-16:
-    cosang=0.0
-
-  if sinang<1.0*10**-16:
-    sinang=0.0
   Rz=np.zeros((3,3),dtype='d')
-
   Rz[0,0]=cosang
   Rz[1,0]=sinang
   Rz[0,1]=-1.0*sinang
@@ -321,13 +304,9 @@ class initStructure:
     self.width5=[]
     self.width6=[]
 
-
-
-
   def addAtom(self,atom,pos):
     self.initPositions.append(pos[:])
     self.corr_atoms.append(atom)
-
 
   def addEntireStructure(self,atomlist,poslist):
     self.initPositions=list(copy.deepcopy(poslist))
@@ -522,22 +501,24 @@ class initStructure:
 
   def setinitPos2(self):
     self.orientpos2=np.transpose(np.matrix(self.initPositions,dtype='d'))
-    self.orientpos2=Rotz(np.pi/2.0)*self.orientpos2
+    self.orientpos2=np.dot(Rotz(np.pi/2.0),self.orientpos2)
 
     self.width2=[self.width[1],self.width[0],self.width[2]]
     self.orientpos2[1,:]=self.orientpos2[1,:]+self.width2[1]/2.0
 
   def setinitPos3(self):
     self.orientpos3=np.transpose(np.matrix(self.initPositions,dtype='d'))
-    self.orientpos3=Rotz(np.pi)*self.orientpos3
+    self.orientpos3=np.dot(Rotz(np.pi),self.orientpos3)
+
 
     self.width3=copy.deepcopy(self.width)
     self.orientpos3[0,:]=self.orientpos3[0,:]+self.width[0]
-    self.orientpos3[1,:]=self.orientpos3[1,:]+self.width[1]/2.0
+    self.orientpos3[1,:]=self.orientpos3[1,:]+(self.width[1]/2.0)
+
 
   def setinitPos4(self):
     self.orientpos4=np.transpose(np.matrix(self.initPositions,dtype='d'))
-    self.orientpos4=Rotz(0.75*np.pi)*self.orientpos4
+    self.orientpos4=np.dot(Rotz(0.75*np.pi),self.orientpos4)
 
     self.width4=[self.width[1],self.width[0],self.width[2]]
     self.orientpos4[0,:]=self.orientpos4[0,:]+self.width4[0]   
@@ -545,7 +526,7 @@ class initStructure:
 
   def setinitPos5(self):
     self.orientpos5=np.transpose(np.matrix(self.initPositions,dtype='d'))
-    self.orientpos5=Roty(np.pi/2)*self.orientpos5
+    self.orientpos5=np.dot(Roty(np.pi/2),self.orientpos5)
 
     self.width5=[self.width[2],self.width[1],self.width[0]]
     self.orientpos5[0,:]=self.orientpos5[0,:]+self.width5[0]
@@ -553,7 +534,7 @@ class initStructure:
 
   def setinitPos6(self):
     self.orientpos6=np.transpose(np.matrix(self.initPositions,dtype='d'))
-    self.orientpos6=Roty(0.75*np.pi)*self.orientpos6
+    self.orientpos6=np.dot(Roty(0.75*np.pi),self.orientpos6)
 
     self.width6=[self.width[2],self.width[1],self.width[0]]
     self.orientpos6[2,:]=self.orientpos6[2,:]+self.width6[2]
@@ -697,7 +678,7 @@ class initStructure:
 
       # Do n-1 duplication / rotations of the structure until the ring is formed.
       for j in range(1,i):
-        temp=Rotz(rotang)*temp
+        temp=np.dot(Rotz(rotang),temp)
 
         # If chirality is present, keep z-periodicity by moving
         #  anything above or below the cell height.
@@ -821,25 +802,26 @@ class initStructure:
       # Functionalize the nanotube
       if self.func==1:
         # Define functionalization radii
-        funcRadiusIn=tuberad
+        delx=0.5
+        funcRadiusIn=tuberad-delx
 
         if n==1:
-          funcRadiusOut=tuberad+self.width1[0]
+          funcRadiusOut=tuberad+self.width1[0]+delx
 
         elif n==2:
-          funcRadiusOut=tuberad+self.width2[0]
+          funcRadiusOut=tuberad+self.width2[0]+delx
 
         elif n==3:
-          funcRadiusOut=tuberad+self.width3[0]
+          funcRadiusOut=tuberad+self.width3[0]+delx
 
         elif n==4:
-          funcRadiusOut=tuberad+self.width4[0]
+          funcRadiusOut=tuberad+self.width4[0]+delx
 
         elif n==5:
-          funcRadiusOut=tuberad+self.width5[0]
+          funcRadiusOut=tuberad+self.width5[0]+delx
 
         elif n==6:
-          funcRadiusOut=tuberad+self.width6[0]
+          funcRadiusOut=tuberad+self.width6[0]+delx
 
 
 
@@ -860,7 +842,7 @@ class initStructure:
               tempPartCoords=copy.deepcopy(np.transpose(np.matrix(self.funcinitPos,dtype='d')))
               tempPartCoords[1,:]=tempPartCoords[1,:]-self.funcPartWidth[1]/2.0
               tempPartCoords[0,:]=tempPartCoords[0,:]+(funcRadiusIn-self.funcPartWidth[0])
-              tempPartCoords=Rotz(funcAngs[j])*tempPartCoords
+              tempPartCoords=np.dot(Rotz(funcAngs[j]),tempPartCoords)
               tempPartCoords[2,:]=tempPartCoords[2,:]+zpos[j]
               tubecoords=np.append(tubecoords,tempPartCoords,1)
               elemlist.extend(self.funccorr_atoms)
@@ -896,7 +878,7 @@ class initStructure:
               tempPartCoords=np.transpose(np.matrix(self.funcinitPos,dtype='d'))
               tempPartCoords[1,:]=tempPartCoords[1,:]-self.funcPartWidth[1]/2.0
               tempPartCoords[0,:]=tempPartCoords[0,:]+funcRadiusOut
-              tempPartCoords=Rotz(funcAngs[j])*tempPartCoords
+              tempPartCoords=np.dot(Rotz(funcAngs[j]),tempPartCoords)
               tempPartCoords[2,:]=tempPartCoords[2,:]+zpos[j]
               tubecoords=np.append(tubecoords,tempPartCoords,1)
               elemlist.extend(self.funccorr_atoms)
@@ -936,7 +918,7 @@ class initStructure:
               tempPartCoords=copy.deepcopy(np.transpose(np.matrix(self.funcinitPos,dtype='d')))
               tempPartCoords[1,:]=tempPartCoords[1,:]-self.funcPartWidth[1]/2.0
               tempPartCoords[0,:]=tempPartCoords[0,:]+xmove
-              tempPartCoords=Rotz(funcAngs[0])*tempPartCoords
+              tempPartCoords=np.dot(Rotz(funcAngs[0]),tempPartCoords)
               tempPartCoords[2,:]=tempPartCoords[2,:]+zpos[0]
 
               tubecoords=np.append(tubecoords,tempPartCoords,1)
@@ -1053,3 +1035,10 @@ printLine()
 
 
 
+#    fig=plt.figure()
+#    ax=fig.add_subplot(111,projection='3d')
+#
+#    for k in range(len(self.corr_atoms)):
+#      ax.scatter(self.orientpos3[0,k],self.orientpos3[1,k],self.orientpos3[2,k])
+#
+#    plt.show()
