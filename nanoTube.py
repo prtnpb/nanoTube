@@ -80,20 +80,88 @@ import copy
 
 start=time.time()
 
+def printLine():
+  print "============================================================================"
 
 
+# Rotation about x-axis clockwise by angle ang
+def Rotx(ang):
+  cosang=np.cos(ang)
+  sinang=np.sin(ang)
 
-class olcaomiFile():
-  def __init__(self):
+  if cosang < 1.0*10**-16:
+    cosang=0.0
+
+  if sinang<1.0*10**-16:
+    sinang=0.0
+
+  Rx=np.zeros((3,3),dtype='d')
+  Rx[0,0]=1.0
+  Rx[1,1]=cosang
+  Rx[2,1]=sinang
+  Rx[1,2]=-1.0*sinang
+  Rx[2,2]=cosang
+
+  return Rx
+
+# Rotation about y-axis clockwise by angle ang
+def Roty(ang):
+  cosang=np.cos(ang)
+  sinang=np.sin(ang)
+
+  if cosang < 1.0*10**-16:
+    cosang=0.0
+
+  if sinang<1.0*10**-16:
+    sinang=0.0
+
+  Ry=np.zeros((3,3),dtype='d')
+  Ry[0,0]=cosang
+  Ry[2,0]=-1.0*sinang
+  Ry[1,1]=1.0
+  Ry[0,2]=sinang
+  Ry[2,2]=cosang
+
+  return Ry
+
+# Rotation about z-axis clockwise by angle ang
+def Rotz(ang):
+  cosang=np.cos(ang)
+  sinang=np.sin(ang)
+
+  if cosang < 1.0*10**-16:
+    cosang=0.0
+
+  if sinang<1.0*10**-16:
+    sinang=0.0
+  Rz=np.zeros((3,3),dtype='d')
+
+  Rz[0,0]=cosang
+  Rz[1,0]=sinang
+  Rz[0,1]=-1.0*sinang
+  Rz[1,1]=cosang
+  Rz[2,2]=1.0
+
+  return Rz
+
+''' 
+This next class will open an olcao.mi and get the resulting
+cell vectors, angles, atom names, positions.
+
+
+''' 
+class olcaomiFile:
+  def __init__(self,filePath):
     self.atomicList=[]
     self.positionList=[]
     self.cellVec=np.zeros(3,dtype='d')
     self.cellAng=np.zeros(3,dtype='d')
     self.fracorcart=''
     self.numAtoms=0
+    self.fP=filePath
 
   def getFile(self):
-    olcaomi=open('olcao.mi','r')
+    olcaomi=open(self.fP,'r')
     allLines=olcaomi.readlines()
     olcaomi.close()
 
@@ -210,30 +278,38 @@ class initStructure:
 
   '''
   
-  def __init__(self,cellx,celly,cellz):
+  def __init__(self):
     self.initPositions=[]           # List of initial positions
     self.corr_atoms=[]              # List of the atom symbols corresponding
                                     #  to initPositions.
 
-    self.width=[cellx,celly,cellz]  # Initial cell dimensions
+    self.width=[]                   # Initial cell dimensions
     self.chir=0                     # Initial chirality set to zero.
     self.scrnum=1                   # Number of loops in scrolling
     self.scrdist=0                  # Distance to extend in scrolling
     self.func=0                     # Functionalization 0=No, 1=Yes
     self.funcLoc=0                  # Determines whether in, out, or both
-    self.height=0                   # Number of times to replicate in
+    self.funcNumPart=0              # Number nanoparticles.
+    self.funcPartWidth=[]           # Cell dimensions for particle
+    self.funcinitPos=[]             # Atomic positions for particle
+    self.funccorr_atoms=[]          # Atomic names for particle.
+    self.funcElemNums=[]            # Number of times to replicate atoms.
+
+    self.height=1                   # Number of times to replicate in
                                     #   z-direction.
     self.name=''                    # Name of Tube
+    self.filePath=''                # File path of the olcao.mi file
     self.tuberadbounds=[]           # Number of replicated cells
+    self.outfile=''                 # Name of the output file
 
     # List of positions of each atom when each face of the parallelpiped
     #  is facing the origin.
-    self.orientpos1=[]
-    self.orientpos2=[]
-    self.orientpos3=[]
-    self.orientpos4=[]
-    self.orientpos5=[]
-    self.orientpos6=[]
+    self.orientpos1=np.zeros(1,dtype='d')
+    self.orientpos2=np.zeros(1,dtype='d')
+    self.orientpos3=np.zeros(1,dtype='d')
+    self.orientpos4=np.zeros(1,dtype='d')
+    self.orientpos5=np.zeros(1,dtype='d')
+    self.orientpos6=np.zeros(1,dtype='d')
 
     # List of the cell widths in cartesian coordinates. Note that there may
     #   be multiple sets in here to correspond to rotations about the face
@@ -245,38 +321,6 @@ class initStructure:
     self.width5=[]
     self.width6=[]
 
-  # Rotation about x-axis clockwise by angle ang
-  def Rotx(ang):
-    Rx=np.zeros((3,3),dtype='d')
-    Rx[0,0]=1
-    Rx[1,1]=np.cos(ang)
-    Rx[2,1]=np.sin(ang)
-    Rx[1,2]=-1*np.sin(ang)
-    Rx[2,2]=np.cos(ang)
- 
-    return Rx
-
-  # Rotation about y-axis clockwise by angle ang
-  def Roty(ang):
-    Ry=np.zeros((3,3),dtype='d')
-    Ry[0,0]=np.cos(ang)
-    Ry[2,0]=-1*np.sin(ang)
-    Ry[1,1]=1
-    Ry[0,2]=np.sin(ang)
-    Ry[2,2]=np.cos(ang)
- 
-    return Ry
-
-  # Rotation about z-axis clockwise by angle ang
-  def Rotz(ang):
-    Rz=np.zeros((3,3),dtype='d')
-    Rz[0,0]=np.cos(ang)
-    Rz[1,0]=np.sin(ang)
-    Rz[0,1]=-1*np.sin(ang)
-    Rz[1,1]=np.cos(ang)
-    Rz[2,2]=1
- 
-    return Rz
 
 
 
@@ -290,11 +334,15 @@ class initStructure:
     self.corr_atoms=list(copy.deepcopy(atomlist))
 
 
-
+  '''
+  This functions parses the input control file 'nanoInCtrl' for
+  the various needed controlling factors for creation of the
+  nanotubes.
+  '''
   def parseInputFile(self):
     # Open Input Control File and read lines to list.
     f=open('nanoInCtrl','r')
-    ctrl=f.readlines()
+    ctrl=f.read().splitlines()
     f.close()
 
     # List of all current flags.
@@ -306,7 +354,7 @@ class initStructure:
 
       # Check for NAME  
       if flags[0] in ctrl:
-        self.name=ctrl[ctrl.index(flags[0]+1)]
+        self.name=ctrl[ctrl.index(flags[0])+1]
       else:
         self.name="MODEL"        
  
@@ -314,11 +362,13 @@ class initStructure:
       if flags[1] in ctrl:
         # If it is a file, get the relevant information.
         if ctrl[ctrl.index(flags[1])+1]=='file':
-          nf=olcaomiFile()
+          nf=olcaomiFile(ctrl[ctrl.index(flags[1])+2])
           nf.getFile()
           self.width=[nf.cellVec[0],nf.cellVec[1],nf.cellVec[2]]
-          addEntireStructure(nf.atomicList,nf.positionList)
- 
+          self.addEntireStructure(nf.atomicList,nf.positionList)
+
+        # If using the adhoc method of list, take in the
+        #  relevant parameters and coordinates.
         elif ctrl[ctrl.index(flags[1])+1]=='list':
           i=ctrl.index(flags[1])+2
           line=ctrl[i].split()
@@ -326,7 +376,8 @@ class initStructure:
           i+=1
           while(ctrl[i] not in flags):
             line=ctrl[i].split()        
-            addAtom(line[0],[float(line[1]),float(line[2]),float(line[3]])) 
+            self.addAtom(line[0],[float(line[1]),float(line[2]),float(line[3])])
+            i+=1 
       else:
         sys.exit('IN must be included in the input control file.\n')
  
@@ -356,423 +407,609 @@ class initStructure:
  
       # Check for FUNCTIONALIZATION
       if flags[6] in ctrl:
+        self.func=1
         self.funcLoc=int(ctrl[ctrl.index(flags[6])+1]) 
-        line=ctrl[ctrl.index(float[6])+2].split()
-        
+        line=ctrl[ctrl.index(flags[6])+2]
+
+        # Check for 'list' specification
+
+        if line=='list':
+          line2=ctrl[ctrl.index(flags[6])+3]
+          # Nanoparticle Designation
+          if len(line2)==1:
+            self.funcNumPart=int(line2[0]) 
+            i=ctrl.index(flags[6])+4
+            line3=ctrl[i].split()
+            self.funcPartWidth=[float(line3[0]),float(line3[1]),float(line3[2])]
+            i+=1
+            line3=ctrl[i].split()
+            while(line3[0] not in flags):
+              self.funccorr_atoms.append(line3[0])
+              self.funcinitPos.append([line3[1],line3[2],line3[3]])
+              i+=1
+              line3=ctrl[i].split()
+
+          # Single Element Designation
+          else:
+            i=ctrl.index(flags[6])+3
+            line2=ctrl[i].split()
+
+            while(line2[0] not in flags):
+              self.funccorr_atoms.append(line2[1])
+              self.funcElemNums.append(int(line2[0]))
+              i+=1
+              line2=ctrl[i].split()
+           
+        # Do file specification when list isn't present.
+        elif line=='file':
+          line2=ctrl[ctrl.index(flags[6])+3].split()
+          self.funcNumPart=int(line2[0])
+          nap=olcaomiFile(line2[1])
+          nap.getFile()
+          self.funccorr_atoms.extend(nap.atomicList)
+          self.funcinitPos.extend(nap.positionList)
+          self.funcPartWidth=[nap.cellVec[0],nap.cellVec[1],nap.cellVec[2]]
 
       # Check for OUT
+      if flags[7] in ctrl:
+        self.outfile=ctrl[ctrl.index(flags[7])+1]
+      else:
+        self.outfile="olcao.skl"
 
     else:
-      sys.exit("END must be included in the input control file.\n" 
+      sys.exit("END must be included in the input control file.\n") 
 
 
 
+    # Do a quick print out of the input parameters.
+
+    printLine()
+    print "INPUT SUMMARY:"
+    printLine()
+
+    print "Initial Structure:"
+    print "  Atoms in model:\t"+str(len(self.corr_atoms))
+    print "  Atoms Names:\t\t"+' '.join(set(self.corr_atoms))
+    print "  Cell Dimensions:\t"+' '.join(str(e) for e in self.width)
+
+    printLine()
+
+    print "Nanotube Properties:"
+    print "  Tube Radii:\t"+' '.join(str(e) for e in self.tuberadbounds)
+    print "  Tube Height:\t"+str(self.height)
+    print "  Chirality:\t"+str(self.chir)
+    print "  Scrolling:"
+    print "    Number of turns:\t"+str(self.scrnum)
+    print "    Scroll distance:\t"+str(self.scrdist)
+    print "  Functionalization:"
+    if self.func==1:
+     if len(self.funcElemNums)==0:
+       print "    Nanoparticle Decoration"
+       if(self.funcPartWidth[2] > self.width[0]*self.height or self.funcPartWidth[2] > self.width[1]*self.height or self.funcPartWidth[2] > self.width[2]*self.height):
+         print 
+         sys.exit("       ERROR: Nanoparticle height is bigger than tube height. Please change the tube height by an integer value.")
+       print "      Number of Nanoparticles:\t"+str(self.funcNumPart)
+       print "      Nanoparticle Dimensions:\t"+' '.join(str(e) for e in self.funcPartWidth)
+       print "      Atoms in Nanoparticle:\t"+str(len(self.funcinitPos))
+       print "      Atom Names:\t\t"+' '.join(set(self.funccorr_atoms))
 
 
+     else:
+       print "    Single Atom Decoration"
+       if self.funcLoc==1:
+         print "    Location:\t\tInside"
+       elif self.funcLoc==2:
+         print "    Location:\t\tOutside"
+       else:
+         print "    Location:\t\tBoth"
+       print "    Number of atoms:\t"+str(sum(self.funcElemNums))
+       print "    Atom names:\t\t"+' '.join(str(e) for e in self.funccorr_atoms)
+    else:
+      print "    None"
 
+    printLine()
+
+    print "Output file: "+self.outfile
+
+    printLine()
+
+
+  # DEFINE THE FOLLOWING ORIENTATIONS 
   def setinitPos1(self):
-    '''
-    This particular function simply shifts the structure cell by
-    half of the current y-value such that it is centered on the x-axis.
-    '''
-    self.orientpos1=list(copy.deepcopy(self.initPositions))
-    for i in range(len(self.orientpos1)):
-      self.orientpos1[i][1]=self.orientpos1[i][1]-(self.width[1]/2.0)
-    self.width1=list(copy.deepcopy(self.width))
-
-
-  #CHANGE SUBSEQUENT POSITIONS TO DERIVED ROTATIONS AND SHIFTS
+    self.orientpos1=np.transpose(np.matrix(self.initPositions,dtype='d'))
+    self.orientpos1[1,:]=self.orientpos1[1,:]-self.width[1]/2.0
+    self.width1=copy.deepcopy(self.width)
 
   def setinitPos2(self):
-    '''
-    This function rotates about the y-axis and then the z-axis. Then shifts
-    such that the structure is centered on the x-axis.
-    '''
-    self.orientpos2=list(copy.deepcopy(self.initPositions))
+    self.orientpos2=np.transpose(np.matrix(self.initPositions,dtype='d'))
+    self.orientpos2=Rotz(np.pi/2.0)*self.orientpos2
 
-    for i in range(len(self.orientpos2)):
-      self.orientpos2[i]=(np.dot(Rot,np.array(self.orientpos2[i],dtype='d'))).tolist()
-      self.orientpos2[i][1]=self.orientpos2[i][1]+(self.width[1]/2.0)
-    self.width2[0]=self.width[2]
-    self.width2[1]=self.width[1]
-    self.width2[2]=self.width[0]
+    self.width2=[self.width[1],self.width[0],self.width[2]]
+    self.orientpos2[1,:]=self.orientpos2[1,:]+self.width2[1]/2.0
 
   def setinitPos3(self):
-    '''
-    This function rotates about the x-axis and then shifts such that
-    the structure is centered on the x-axis.
-    '''
-    self.orientpos3=list(copy.deepcopy(self.initPositions))
-    Rot=np.zeros((3,3),dtype='d')
-    Rot[0][0]=1.0
-    Rot[1][2]=-1.0
-    Rot[2][1]=1.0
-    for i in range(len(self.orientpos3)):
-      self.orientpos3[i]=(np.dot(Rot,np.array(self.orientpos3[i],dtype='d'))).tolist()
+    self.orientpos3=np.transpose(np.matrix(self.initPositions,dtype='d'))
+    self.orientpos3=Rotz(np.pi)*self.orientpos3
 
-      self.orientpos3[i][1]=self.orientpos3[i][1]+(self.width[2]/2.0)
-    self.width3[0]=self.width[0]
-    self.width3[1]=self.width[2]
-    self.width3[2]=self.width[1]
-
+    self.width3=copy.deepcopy(self.width)
+    self.orientpos3[0,:]=self.orientpos3[0,:]+self.width[0]
+    self.orientpos3[1,:]=self.orientpos3[1,:]+self.width[1]/2.0
 
   def setinitPos4(self):
-    self.orientpos4=list(copy.deepcopy(self.initPositions))
+    self.orientpos4=np.transpose(np.matrix(self.initPositions,dtype='d'))
+    self.orientpos4=Rotz(0.75*np.pi)*self.orientpos4
 
-    Rot=np.zeros((3,3),dtype='d')
-    Rot[0][1]=1.0
-    Rot[1][0]=-1.0
-    Rot[2][2]=1.0
+    self.width4=[self.width[1],self.width[0],self.width[2]]
+    self.orientpos4[0,:]=self.orientpos4[0,:]+self.width4[0]   
+    self.orientpos4[1,:]=self.orientpos4[1,:]-self.width4[1]/2.0
 
-    for i in range(len(self.orientpos4)):
-      self.orientpos4[i]=(np.dot(Rot,np.array(self.orientpos4[i],dtype='d'))).tolist()
-      self.orientpos4[i][1]+=self.width[0]/2.0
-    self.width4[0]=self.width[1]
-    self.width4[1]=self.width[0]
-    self.width4[2]=self.width[2]
+  def setinitPos5(self):
+    self.orientpos5=np.transpose(np.matrix(self.initPositions,dtype='d'))
+    self.orientpos5=Roty(np.pi/2)*self.orientpos5
+
+    self.width5=[self.width[2],self.width[1],self.width[0]]
+    self.orientpos5[0,:]=self.orientpos5[0,:]+self.width5[0]
+    self.orientpos5[1,:]=self.orientpos5[1,:]-self.width5[1]/2.0
+
+  def setinitPos6(self):
+    self.orientpos6=np.transpose(np.matrix(self.initPositions,dtype='d'))
+    self.orientpos6=Roty(0.75*np.pi)*self.orientpos6
+
+    self.width6=[self.width[2],self.width[1],self.width[0]]
+    self.orientpos6[2,:]=self.orientpos6[2,:]+self.width6[2]
+    self.orientpos6[1,:]=self.orientpos6[1,:]-self.width6[1]/2.0
 
 
-
-  def setAllThreePos(self):
+  def setAllPos(self):
     self.setinitPos1()
     self.setinitPos2()
     self.setinitPos3()
     self.setinitPos4()
+    self.setinitPos5()
+    self.setinitPos6()
 
 
-
-  def doRot1(self):
+  def doRot(self,n):
     tuberad=0.0
     ang=0.0
     rotang=0.0
-    RotMat=np.zeros((3,3),dtype='d')
 
-    for i in range(15,81):
+    for i in range(self.tuberadbounds[0],self.tuberadbounds[1]):
       # Get rotation angle and tube radius
       ang=(np.pi*(i-2.0))/(2.0*(i))
       rotang=2*((np.pi/2)-ang)
-      tuberad=(self.width1[1]/2.0)*np.tan(ang)
 
-      # Make a temporary copy of the atomic positions
-      temp=np.array(list(copy.deepcopy(self.orientpos1)),dtype='d')
+      if n==1:
+        tuberad=(self.width1[1]/2.0)*np.tan(ang)
+       
+        # Make a temporary copy of the atomic positions
+        temp=copy.deepcopy(self.orientpos1)
+       
+        # Check for chirality
+        if self.chir>0:
+          zshift=(self.chir*self.width1[2])/float(i)
+          for j in range(len(self.corr_atoms)):
+            temp[2,j]=temp[2,j]+((temp[1,j]*zshift)/self.width1[1])
+            if temp[2,j] > self.width1[2]:
+              temp[2,j]=temp[2,j]-self.width1[2]
+            elif temp[2,j]<0.0:
+              temp[2,j]=temp[2,j]+self.width1[2]
+
+
+      elif n==2:
+        tuberad=(self.width2[1]/2.0)*np.tan(ang)
+       
+        # Make a temporary copy of the atomic positions
+        temp=copy.deepcopy(self.orientpos2)
+       
+        # Check for chirality
+        if self.chir>0:
+          zshift=(self.chir*self.width2[2])/float(i)
+          for j in range(len(self.corr_atoms)):
+            temp[2,j]=temp[2,j]+((temp[1,j]*zshift)/self.width2[1])
+            if temp[2,j] > self.width2[2]:
+              temp[2,j]=temp[2,j]-self.width2[2]
+            elif temp[2,j]<0.0:
+              temp[2,j]=temp[2,j]+self.width2[2]
+
+
+      elif n==3:
+        tuberad=(self.width3[1]/2.0)*np.tan(ang)
+       
+        # Make a temporary copy of the atomic positions
+        temp=copy.deepcopy(self.orientpos3)
+       
+        # Check for chirality
+        if self.chir>0:
+          zshift=(self.chir*self.width3[2])/float(i)
+          for j in range(len(self.corr_atoms)):
+            temp[2,j]=temp[2,j]+((temp[1,j]*zshift)/self.width3[1])
+            if temp[2,j] > self.width3[2]:
+              temp[2,j]=temp[2,j]-self.width3[2]
+            elif temp[2,j]<0.0:
+              temp[2,j]=temp[2,j]+self.width3[2]
+
+
+
+      elif n==4:
+        tuberad=(self.width4[1]/2.0)*np.tan(ang)
+       
+        # Make a temporary copy of the atomic positions
+        temp=copy.deepcopy(self.orientpos4)
+       
+        # Check for chirality
+        if self.chir>0:
+          zshift=(self.chir*self.width4[2])/float(i)
+          for j in range(len(self.corr_atoms)):
+            temp[2,j]=temp[2,j]+((temp[1,j]*zshift)/self.width4[1])
+            if temp[2,j] > self.width4[2]:
+              temp[2,j]=temp[2,j]-self.width4[2]
+            elif temp[2,j]<0.0:
+              temp[2,j]=temp[2,j]+self.width4[2]
+
+
+
+      elif n==5:
+        tuberad=(self.width5[1]/2.0)*np.tan(ang)
+       
+        # Make a temporary copy of the atomic positions
+        temp=copy.deepcopy(self.orientpos5)
+       
+        # Check for chirality
+        if self.chir>0:
+          zshift=(self.chir*self.width5[2])/float(i)
+          for j in range(len(self.corr_atoms)):
+            temp[2,j]=temp[2,j]+((temp[1,j]*zshift)/self.width5[1])
+            if temp[2,j] > self.width5[2]:
+              temp[2,j]=temp[2,j]-self.width5[2]
+            elif temp[2,j]<0.0:
+              temp[2,j]=temp[2,j]+self.width5[2]
+
+
+
+      elif n==6:
+        tuberad=(self.width6[1]/2.0)*np.tan(ang)
+       
+        # Make a temporary copy of the atomic positions
+        temp=copy.deepcopy(self.orientpos6)
+       
+        # Check for chirality
+        if self.chir>0:
+          zshift=(self.chir*self.width6[2])/float(i)
+          for j in range(len(self.corr_atoms)):
+            temp[2,j]=temp[2,j]+((temp[1,j]*zshift)/self.width6[1])
+            if temp[2,j] > self.width6[2]:
+              temp[2,j]=temp[2,j]-self.width6[2]
+            elif temp[2,j]<0.0:
+              temp[2,j]=temp[2,j]+self.width6[2]
+      
+
 
       # Shift the cell x-values out such that the inner cell face is
       #  at the specified radius
-      for j in range(len(temp)):
-        temp[j][0]=temp[j][0]+tuberad
+      temp[0,:]=temp[0,:]+tuberad
 
 
       # Make the tube coordinates the new coordinates
-      tubecoords=temp[:][:]
+      tubecoords=copy.deepcopy(temp)
       elemlist=list(copy.deepcopy(self.corr_atoms)) 
+
 
       # Do n-1 duplication / rotations of the structure until the ring is formed.
       for j in range(1,i):
-        RotMat[0][0]=np.cos(rotang*j)
-        RotMat[0][1]=-1.0*np.sin(rotang*j)
-        RotMat[1][0]=np.sin(rotang*j)
-        RotMat[1][1]=np.cos(rotang*j)
-        RotMat[2][2]=1.0
+        temp=Rotz(rotang)*temp
+
+        # If chirality is present, keep z-periodicity by moving
+        #  anything above or below the cell height.
+        if self.chir>0:
+          temp[2,:]=temp[2,:]-zshift
+
+          if n==1:
+            for k in range(len(self.corr_atoms)):
+              if temp[2,k]>self.width1[2]:
+                temp[2,k]=temp[2,k]-self.width1[2]
+              elif temp[2,k]<0.0:
+                temp[2,k]=temp[2,k]+self.width1[2]
+
+          elif n==2:
+            for k in range(len(self.corr_atoms)):
+              if temp[2,k]>self.width2[2]:
+                temp[2,k]=temp[2,k]-self.width2[2]
+              elif temp[2,k]<0.0:
+                temp[2,k]=temp[2,k]+self.width2[2]
+
+          elif n==3:
+            for k in range(len(self.corr_atoms)):
+              if temp[2,k]>self.width3[2]:
+                temp[2,k]=temp[2,k]-self.width3[2]
+              elif temp[2,k]<0.0:
+                temp[2,k]=temp[2,k]+self.width3[2]
+
+          elif n==4:
+            for k in range(len(self.corr_atoms)):
+              if temp[2,k]>self.width4[2]:
+                temp[2,k]=temp[2,k]-self.width4[2]
+              elif temp[2,k]<0.0:
+                temp[2,k]=temp[2,k]+self.width4[2]
+
+          elif n==5:
+            for k in range(len(self.corr_atoms)):
+              if temp[2,k]>self.width5[2]:
+                temp[2,k]=temp[2,k]-self.width5[2]
+              elif temp[2,k]<0.0:
+                temp[2,k]=temp[2,k]+self.width5[2]
+
+          elif n==6:
+            for k in range(len(self.corr_atoms)):
+              if temp[2,k]>self.width6[2]:
+                temp[2,k]=temp[2,k]-self.width6[2]
+              elif temp[2,k]<0.0:
+                temp[2,k]=temp[2,k]+self.width6[2]
+
+        # Add the new piece to the existing structure.
+        tubecoords=np.append(tubecoords,temp,1)
         elemlist.extend(list(copy.deepcopy(self.corr_atoms)))
 
 
-        for k in range(len(temp)):
-          tubecoords=np.vstack([tubecoords,np.dot(RotMat,np.array(temp[k],dtype='d'))])
-            
-      #fig=plt.figure()
-      #ax = fig.add_subplot(111, projection='3d')
-      #plt.ion()
-      #plt.show()
-      #for j in range(len(tubecoords)):
-      #  ax.scatter(tubecoords[j][0],tubecoords[j][1],tubecoords[j][2])
-      #  plt.draw()
+ 
+      # Extend the nanotube in the z-direction based on the height.
+      if self.height>1:
+        temp2=copy.deepcopy(tubecoords)
+        temp3=copy.deepcopy(elemlist)
+
+        if n==1:
+          for k in range(self.height+1):
+            temp2[2,:]=temp2[2,:]+self.width1[2]
+         
+            tubecoords=np.append(tubecoords,temp2,1)
+            elemlist.extend(list(copy.deepcopy(temp3)))
+
+        elif n==2:
+          for k in range(self.height+1):
+            temp2[2,:]=temp2[2,:]+self.width2[2]
+         
+            tubecoords=np.append(tubecoords,temp2,1)
+            elemlist.extend(list(copy.deepcopy(temp3)))
+
+        elif n==3:
+          for k in range(self.height+1):
+            temp2[2,:]=temp2[2,:]+self.width3[2]
+         
+            tubecoords=np.append(tubecoords,temp2,1)
+            elemlist.extend(list(copy.deepcopy(temp3)))
+
+        elif n==4:
+          for k in range(self.height+1):
+            temp2[2,:]=temp2[2,:]+self.width4[2]
+         
+            tubecoords=np.append(tubecoords,temp2,1)
+            elemlist.extend(list(copy.deepcopy(temp3)))
+
+        elif n==5:
+          for k in range(self.height+1):
+            temp2[2,:]=temp2[2,:]+self.width5[2]
+         
+            tubecoords=np.append(tubecoords,temp2,1)
+            elemlist.extend(list(copy.deepcopy(temp3)))
+
+        elif n==6:
+          for k in range(self.height+1):
+            temp2[2,:]=temp2[2,:]+self.width6[2]
+         
+            tubecoords=np.append(tubecoords,temp2,1)
+            elemlist.extend(list(copy.deepcopy(temp3)))
+
+      if n==1:
+        newtubeheight=self.width1[2]*self.height
+
+      elif n==2:
+        newtubeheight=self.width2[2]*self.height
+
+      elif n==3:
+        newtubeheight=self.width3[2]*self.height
+
+      elif n==4:
+        newtubeheight=self.width4[2]*self.height
+
+      elif n==5:
+        newtubeheight=self.width5[2]*self.height
+
+      elif n==6:
+        newtubeheight=self.width6[2]*self.height
+
+
+      # Functionalize the nanotube
+      if self.func==1:
+        # Define functionalization radii
+        funcRadiusIn=tuberad
+
+        if n==1:
+          funcRadiusOut=tuberad+self.width1[0]
+
+        elif n==2:
+          funcRadiusOut=tuberad+self.width2[0]
+
+        elif n==3:
+          funcRadiusOut=tuberad+self.width3[0]
+
+        elif n==4:
+          funcRadiusOut=tuberad+self.width4[0]
+
+        elif n==5:
+          funcRadiusOut=tuberad+self.width5[0]
+
+        elif n==6:
+          funcRadiusOut=tuberad+self.width6[0]
+
+
+
+
+        # Check for functionalization location
+        # INSIDE
+        if self.funcLoc==1:
+
+          # Single Elems or Nanoparticle.
+          #  NANOPARTICLE
+          if len(self.funcElemNums)==0:
+            funcAngs=np.random.uniform(low=0.0,high=2.0*np.pi,size=(self.funcNumPart,))
+            xpos=funcRadiusIn*np.cos(funcAngs)
+            ypos=funcRadiusIn*np.sin(funcAngs)
+            zpos=np.random.uniform(low=0.0,high=newtubeheight-self.funcPartWidth[2],size=(self.funcNumPart,))
+           
+            for j in range(len(self.funcNumPart)):
+              tempPartCoords=copy.deepcopy(np.transpose(np.matrix(self.funcinitPos,dtype='d')))
+              tempPartCoords[1,:]=tempPartCoords[1,:]-self.funcPartWidth[1]/2.0
+              tempPartCoords[0,:]=tempPartCoords[0,:]+(funcRadiusIn-self.funcPartWidth[0])
+              tempPartCoords=Rotz(funcAngs[j])*tempPartCoords
+              tempPartCoords[2,:]=tempPartCoords[2,:]+zpos[j]
+              tubecoords=np.append(tubecoords,tempPartCoords,1)
+              elemlist.extend(self.funccorr_atoms)
+ 
+          # SINGLE ELEMENTS
+          else:  
+            for j in range(len(self.funccorr_atoms)):
+              for k in range(self.funcElemNums[j]):
+                funcAngs=np.random.uniform(low=0.0,high=2.0*np.pi,size=(1,))
+                xpos=funcRadiusIn*np.cos(funcAngs)
+                ypos=funcRadiusIn*np.sin(funcAngs)
+                zpos=np.random.uniform(low=0.0,high=newtubeheight,size=(1,))
+
+                quickvec=np.zeros((3,1),dtype='d')
+                quickvec[0,0]=xpos[0]
+                quickvec[1,0]=ypos[0]
+                quickvec[2,0]=zpos[0]
+
+                tubecoords=np.append(tubecoords,quickvec,1)
+                elemlist.append(self.funccorr_atoms[j])
+             
+        # OUTSIDE
+        elif self.funcLoc==2:
+          # Single Elems or Nanoparticle.
+          # NANOPARTICLE
+          if len(self.funcElemNums)==0:
+            funcAngs=np.random.uniform(low=0.0,high=2.0*np.pi,size=(self.funcNumPart,))
+            xpos=funcRadiusOut*np.cos(funcAngs)
+            ypos=funcRadiusOut*np.sin(funcAngs)
+            zpos=np.random.uniform(low=0.0,high=newtubeheight-self.funcPartWidth[2],size=(self.funcNumPart,))
+
+            for j in range(self.funcNumPart):
+              tempPartCoords=np.transpose(np.matrix(self.funcinitPos,dtype='d'))
+              tempPartCoords[1,:]=tempPartCoords[1,:]-self.funcPartWidth[1]/2.0
+              tempPartCoords[0,:]=tempPartCoords[0,:]+funcRadiusOut
+              tempPartCoords=Rotz(funcAngs[j])*tempPartCoords
+              tempPartCoords[2,:]=tempPartCoords[2,:]+zpos[j]
+              tubecoords=np.append(tubecoords,tempPartCoords,1)
+              elemlist.extend(self.funccorr_atoms)
+
+          # SINGLE ELEMENTS
+          else:  
+            for j in range(len(self.funccorr_atoms)):
+              for k in range(self.funcElemNums[j]):
+                funcAngs=np.random.uniform(low=0.0,high=2.0*np.pi,size=(1,))
+                xpos=funcRadiusOut*np.cos(funcAngs)
+                ypos=funcRadiusOut*np.sin(funcAngs)
+                zpos=np.random.uniform(low=0.0,high=newtubeheight,size=(1,))
+
+                quickvec=np.zeros((3,1),dtype='d')
+                quickvec[0,0]=xpos[0]
+                quickvec[1,0]=ypos[0]
+                quickvec[2,0]=zpos[0]
+                tubecoords=np.append(tubecoords,quickvec,1)
+                elemlist.append(self.funccorr_atoms[j])
+
+
+        # BOTH
+        elif self.funcLoc==3:
+          # Single Elems or Nanoparticle.
+          if len(self.funcElemNums)==0:
+            for j in range(self.funcNumPart+1):
+              if np.random.randint(2)==0:
+                funcAngs=np.random.uniform(low=0.0,high=2.0*np.pi,size=(1,))
+                xmove=funcRadIn-self.funcPartWidth[0]
+                zpos=np.random.uniform(low=0.0,high=newtubeheight-self.funcPartWidth[2],size=(1,))
+              
+              else: 
+                funcAngs=np.random.uniform(low=0.0,high=2.0*np.pi,size=(1,))
+                xmove=funcRadOut
+                zpos=np.random.uniform(low=0.0,high=newtubeheight-self.funcPartWidth[2],size=(1,))
+         
+              tempPartCoords=copy.deepcopy(np.transpose(np.matrix(self.funcinitPos,dtype='d')))
+              tempPartCoords[1,:]=tempPartCoords[1,:]-self.funcPartWidth[1]/2.0
+              tempPartCoords[0,:]=tempPartCoords[0,:]+xmove
+              tempPartCoords=Rotz(funcAngs[0])*tempPartCoords
+              tempPartCoords[2,:]=tempPartCoords[2,:]+zpos[0]
+
+              tubecoords=np.append(tubecoords,tempPartCoords,1)
+              elemlist.extend(self.funccorr_atoms)
+              
+          else:
+            for j in range(len(self.funccorr_atoms)):
+              for k in range(self.funcElemNums[j]):
+                funcAngs=np.random.uniform(low=0.0,high=2.0*np.pi,size=(1,))
+                zpos=np.random.uniform(low=0.0,high=newtubeheight,size=(1,))
+
+                if np.random.randint(2)==0:
+                  xpos=funcRadiusIn*np.cos(funcAngs)
+                  ypos=funcRadiusIn*np.sin(funcAngs)
+                else:
+                  xpos=funcRadiusIn*np.cos(funcAngs)
+                  ypos=funcRadiusIn*np.sin(funcAngs)
+
+                quickvec=np.zeros((3,1),dtype='d')
+                quickvec[0,0]=xpos[0]
+                quickvec[1,0]=ypos[0]
+                quickvec[2,0]=zpos[0]
+
+
+                tubecoords=np.append(tubecoords,quickvec,1)
+                elemlist.append(self.funccorr_atoms[j])
+                  
+
 
       # STARTING OUTPUT HERE
 
       xmax=0.0
       ymax=0.0
 
-      #for j in range(len(tubecoords)):
-      #  if abs(tubecoords[j][0])>xmax:
-      #    xmax=abs(tubecoords[j][0])
-      #  if abs(tubecoords[j][1])>ymax:
-      #    ymax=abs(tubecoords[j][1])
+      if n==1:
+        newcellwidth=2.0*tuberad+2.0*self.width1[0]+30.0
+        fileout=open('NT_'+self.name+'_Face1_'+str(i)+'C'+str(self.chir).replace('.','p')+'_Func'+str(self.func)+'.dat','w')
 
-      newcellwidth=2.0*tuberad+2.0*self.width1[0]+30.0
+      elif n==2:
+        newcellwidth=2.0*tuberad+2.0*self.width2[0]+30.0
+        fileout=open('NT_'+self.name+'_Face2_'+str(i)+'C'+str(self.chir).replace('.','p')+'_Func'+str(self.func)+'.dat','w')
 
-      for j in range(len(tubecoords)):
-        tubecoords[j][0]+=newcellwidth/2.0
-        tubecoords[j][1]+=newcellwidth/2.0
-        
-      # Uncomment this for another z layer.
-      #tubetemp=np.array(list(copy.deepcopy(tubecoords)),dtype='d')
-      #for j in range(len(tubetemp)):
-      #  tubetemp[j][2]+=self.width1[2] 
-      #tubecoords=np.vstack([tubecoords,tubetemp])
-      #elemlist.extend(list(copy.deepcopy(elemlist)))
-            
+      elif n==3:
+        newcellwidth=2.0*tuberad+2.0*self.width3[0]+30.0
+        fileout=open('NT_'+self.name+'_Face3_'+str(i)+'C'+str(self.chir).replace('.','p')+'_Func'+str(self.func)+'.dat','w')
 
-      fileout=open('NT_TiO2_'+str(int(np.ceil((2*np.pi)/rotang)))+'_123_OC0.dat','w')
+      elif n==4:
+        newcellwidth=2.0*tuberad+2.0*self.width4[0]+30.0
+        fileout=open('NT_'+self.name+'_Face4_'+str(i)+'C'+str(self.chir).replace('.','p')+'_Func'+str(self.func)+'.dat','w')
+
+
+      elif n==5:
+        newcellwidth=2.0*tuberad+2.0*self.width5[0]+30.0
+        fileout=open('NT_'+self.name+'_Face5_'+str(i)+'C'+str(self.chir).replace('.','p')+'_Func'+str(self.func)+'.dat','w')
+
+      elif n==6:
+        newcellwidth=2.0*tuberad+2.0*self.width6[0]+30.0
+        fileout=open('NT_'+self.name+'_Face6_'+str(i)+'C'+str(self.chir).replace('.','p')+'_Func'+str(self.func)+'.dat','w')
+
+
+      tubecoords[0,:]=tubecoords[0,:]+newcellwidth/2.0
+      tubecoords[1,:]=tubecoords[1,:]+newcellwidth/2.0
+
+
       fileout.write('title\n')
-      fileout.write('structure with radius '+str(tuberad)+'\n')
+      fileout.write(self.name+' '+str(i)+'\n')
       fileout.write('end\n')
       fileout.write('cell\n')
 
-      # Add a *2 on the z term if doing another layer.
-      fileout.write(str(newcellwidth)+'  '+str(newcellwidth)+'  '+str(self.width1[2])+' 90.000 90.000 90.000\n')
+      fileout.write(str(newcellwidth)+'  '+str(newcellwidth)+'  '+str(newtubeheight)+' 90.000 90.000 90.000\n')
       fileout.write('cartesian '+str(len(elemlist))+'\n')
-      for j in range(len(tubecoords)):
-        fileout.write(elemlist[j]+'\t'+str(tubecoords[j][0])+'\t'+str(tubecoords[j][1])+'\t'+str(tubecoords[j][2])+'\n')
-      fileout.write('space 1_a\n')
-      fileout.write('supercell 1 1 1\n')
-      fileout.write('full\n')
-      fileout.close()
-
-            
-  def doRot2(self):
-    tuberad=0.0
-    ang=0.0
-    rotang=0.0
-    RotMat=np.zeros((3,3),dtype='d')
-
-    for i in range(15,81):
-      ang=(np.pi*(i-2.0))/(2.0*(i))
-      rotang=2*((np.pi/2)-ang)
-      tuberad=(self.width2[1]/2.0)*np.tan(ang)
-
-      temp=np.array(list(copy.deepcopy(self.orientpos2)),dtype='d')
-
-      for j in range(len(temp)):
-        temp[j][0]=temp[j][0]+tuberad
-
-      tubecoords=temp[:][:]
-      elemlist=list(copy.deepcopy(self.corr_atoms)) 
-      for j in range(1,i):
-        RotMat[0][0]=np.cos(rotang*j)
-        RotMat[0][1]=-1.0*np.sin(rotang*j)
-        RotMat[1][0]=np.sin(rotang*j)
-        RotMat[1][1]=np.cos(rotang*j)
-        RotMat[2][2]=1.0
-        elemlist.extend(list(copy.deepcopy(self.corr_atoms)))
-
-
-        for k in range(len(temp)):
-          tubecoords=np.vstack([tubecoords,np.dot(RotMat,np.array(temp[k],dtype='d'))])
-            
-      #fig=plt.figure()
-      #ax = fig.add_subplot(111, projection='3d')
-      #plt.ion()
-      #plt.show()
-      #for j in range(len(tubecoords)):
-      #  ax.scatter(tubecoords[j][0],tubecoords[j][1],tubecoords[j][2])
-      #  plt.draw()
-      xmax=0.0
-      ymax=0.0
-
-      #for j in range(len(tubecoords)):
-      #  if abs(tubecoords[j][0])>xmax:
-      #    xmax=abs(tubecoords[j][0])
-      #  if abs(tubecoords[j][1])>ymax:
-      #    ymax=abs(tubecoords[j][1])
-
-      newcellwidth=2.0*tuberad+2.0*self.width2[0]+30.0
-
-      for j in range(len(tubecoords)):
-        tubecoords[j][0]+=newcellwidth/2.0
-        tubecoords[j][1]+=newcellwidth/2.0
-        
-
-      #tubetemp=np.array(list(copy.deepcopy(tubecoords)),dtype='d')
-      #for j in range(len(tubetemp)):
-      #  tubetemp[j][2]+=self.width2[2] 
-      #tubecoords=np.vstack([tubecoords,tubetemp])
-      #elemlist.extend(list(copy.deepcopy(elemlist)))
-            
-
-      fileout=open('NT_TiO2_'+str(int(np.ceil((2*np.pi)/rotang)))+'_321_OC0.dat','w')
-      fileout.write('title\n')
-      fileout.write('structure with radius '+str(tuberad)+'\n')
-      fileout.write('end\n')
-      fileout.write('cell\n')
-      fileout.write(str(newcellwidth)+'  '+str(newcellwidth)+'  '+str(self.width2[2])+' 90.000 90.000 90.000\n')
-      fileout.write('cartesian '+str(len(elemlist))+'\n')
-      for j in range(len(tubecoords)):
-        fileout.write(elemlist[j]+'\t'+str(tubecoords[j][0])+'\t'+str(tubecoords[j][1])+'\t'+str(tubecoords[j][2])+'\n')
-      fileout.write('space 1_a\n')
-      fileout.write('supercell 1 1 1\n')
-      fileout.write('full\n')
-      fileout.close()
-
-
-  def doRot3(self):
-    tuberad=0.0
-    ang=0.0
-    rotang=0.0
-    RotMat=np.zeros((3,3),dtype='d')
-
-    for i in range(15,81):
-      ang=(np.pi*(i-2.0))/(2.0*(i))
-      rotang=2*((np.pi/2)-ang)
-      tuberad=(self.width3[1]/2.0)*np.tan(ang)
-
-      temp=np.array(list(copy.deepcopy(self.orientpos3)),dtype='d')
-
-      for j in range(len(temp)):
-        temp[j][0]=temp[j][0]+tuberad
-
-      tubecoords=temp[:][:]
-      elemlist=list(copy.deepcopy(self.corr_atoms)) 
-      for j in range(1,i):
-        RotMat[0][0]=np.cos(rotang*j)
-        RotMat[0][1]=-1.0*np.sin(rotang*j)
-        RotMat[1][0]=np.sin(rotang*j)
-        RotMat[1][1]=np.cos(rotang*j)
-        RotMat[2][2]=1.0
-        elemlist.extend(list(copy.deepcopy(self.corr_atoms)))
-
-
-        for k in range(len(temp)):
-          tubecoords=np.vstack([tubecoords,np.dot(RotMat,np.array(temp[k],dtype='d'))])
-            
-      #fig=plt.figure()
-      #ax = fig.add_subplot(111, projection='3d')
-      #plt.ion()
-      #plt.show()
-      #for j in range(len(tubecoords)):
-      #  ax.scatter(tubecoords[j][0],tubecoords[j][1],tubecoords[j][2])
-      #  plt.draw()
-      xmax=0.0
-      ymax=0.0
-
-      #for j in range(len(tubecoords)):
-      #  if abs(tubecoords[j][0])>xmax:
-      #    xmax=abs(tubecoords[j][0])
-      #  if abs(tubecoords[j][1])>ymax:
-      #    ymax=abs(tubecoords[j][1])
-
-      newcellwidth=2.0*tuberad+2.0*self.width3[0]+30.0
-
-      for j in range(len(tubecoords)):
-        tubecoords[j][0]+=newcellwidth/2.0
-        tubecoords[j][1]+=newcellwidth/2.0
-        
-
-      #tubetemp=np.array(list(copy.deepcopy(tubecoords)),dtype='d')
-      #for j in range(len(tubetemp)):
-      #  tubetemp[j][2]+=self.width3[2] 
-      #tubecoords=np.vstack([tubecoords,tubetemp])
-      #elemlist.extend(list(copy.deepcopy(elemlist)))
-            
-      
-
-      fileout=open('NT_TiO2_'+str(int(np.ceil((2*np.pi)/rotang)))+'_132_OC0.dat','w')
-      fileout.write('title\n')
-      fileout.write('structure with radius '+str(tuberad)+'\n')
-      fileout.write('end\n')
-      fileout.write('cell\n')
-      fileout.write(str(newcellwidth)+'  '+str(newcellwidth)+'  '+str(self.width3[2])+' 90.000 90.000 90.000\n')
-      fileout.write('cartesian '+str(len(elemlist))+'\n')
-      for j in range(len(tubecoords)):
-        fileout.write(elemlist[j]+'\t'+str(tubecoords[j][0])+'\t'+str(tubecoords[j][1])+'\t'+str(tubecoords[j][2])+'\n')
-      fileout.write('space 1_a\n')
-      fileout.write('supercell 1 1 1\n')
-      fileout.write('full\n')
-      fileout.close()
-
-
-  def doRot4(self):
-    tuberad=0.0
-    ang=0.0
-    rotang=0.0
-    RotMat=np.zeros((3,3),dtype='d')
-
-    for i in range(15,81):
-      ang=(np.pi*(i-2.0))/(2.0*(i))
-      rotang=2.0*((np.pi/2.0)-ang)
-      tuberad=(self.width4[1]/2.0)*np.tan(ang)
-
-      temp=np.array(list(copy.deepcopy(self.orientpos4)),dtype='d')
-
-      for j in range(len(temp)):
-        temp[j][0]=temp[j][0]+tuberad
-
-      tubecoords=temp[:][:]
-      elemlist=list(copy.deepcopy(self.corr_atoms)) 
-      for j in range(1,i):
-        RotMat[0][0]=np.cos(rotang*j)
-        RotMat[0][1]=-1.0*np.sin(rotang*j)
-        RotMat[1][0]=np.sin(rotang*j)
-        RotMat[1][1]=np.cos(rotang*j)
-        RotMat[2][2]=1.0
-        elemlist.extend(list(copy.deepcopy(self.corr_atoms)))
-
-
-        for k in range(len(temp)):
-          tubecoords=np.vstack([tubecoords,np.dot(RotMat,np.array(temp[k],dtype='d'))])
-            
-      #fig=plt.figure()
-      #ax = fig.add_subplot(111, projection='3d')
-      #plt.ion()
-      #plt.show()
-      #for j in range(len(tubecoords)):
-      #  ax.scatter(tubecoords[j][0],tubecoords[j][1],tubecoords[j][2])
-      #  plt.draw()
-      xmax=0.0
-      ymax=0.0
-
-      #for j in range(len(tubecoords)):
-      #  if abs(tubecoords[j][0])>xmax:
-      #    xmax=abs(tubecoords[j][0])
-      #  if abs(tubecoords[j][1])>ymax:
-      #    ymax=abs(tubecoords[j][1])
-
-      newcellwidth=2.0*tuberad+2.0*self.width4[0]+30.0
-
-      for j in range(len(tubecoords)):
-        tubecoords[j][0]+=newcellwidth/2.0
-        tubecoords[j][1]+=newcellwidth/2.0
-        
-      tubetemp=np.array(list(copy.deepcopy(tubecoords)),dtype='d')
-      initelems=list(copy.deepcopy(elemlist))
-      for tubeINC in range(1,6):
-        tubetemp1=np.array(list(copy.deepcopy(tubetemp)),dtype='d')
-        for j in range(len(tubetemp1)):
-          tubetemp1[j][2]+=(self.width4[2]*tubeINC)
-        tubecoords=np.vstack([tubecoords,tubetemp1])
-        elemlist.extend(list(copy.deepcopy(initelems)))
-
-
-      delx=0.0
-      for j in range(36):
-        xmax=np.random.randint(int(((newcellwidth/2.0)-(tuberad+self.width4[0]+delx))*100),int(((newcellwidth/2.0)+(tuberad+self.width4[0]+delx))*100))/100.0
-        ymax=((-1)**(np.random.randint(0,2)))*np.sqrt(((tuberad+self.width4[0]+delx)**2.0)-((xmax-(newcellwidth/2.0))**2))+((newcellwidth/2.0))
-        zmax=np.random.randint(0,int(self.width4[2]*5*100))/100.0     
-        quickvec=np.zeros(3,dtype='d')
-        quickvec[0]=xmax
-        quickvec[1]=ymax
-        quickvec[2]=zmax
-        tubecoords=np.vstack([tubecoords,quickvec])
-        elemlist.append('li1')
-
-
-      #fig=plt.figure()
-      #ax=fig.add_subplot(111,projection='3d')
-      #plt.ion()
-      #plt.show()
-      #for j in range(len(tubecoords)):
-      #  ax.scatter(tubecoords[j][0],tubecoords[j][1],tubecoords[j][2])
-      #  plt.draw()
-            
-
-      fileout=open('NT_TiO2_'+str(int(np.ceil((2*np.pi)/rotang)))+'_213_OC0.dat','w')
-      fileout.write('title\n')
-      fileout.write('structure with radius '+str(tuberad)+'\n')
-      fileout.write('end\n')
-      fileout.write('cell\n')
-      fileout.write(str(newcellwidth)+'  '+str(newcellwidth)+'  '+str(self.width4[2]*5)+' 90.000 90.000 90.000\n')
-      fileout.write('cartesian '+str(len(elemlist))+'\n')
-      for j in range(len(tubecoords)):
-        fileout.write(elemlist[j]+'\t'+str(tubecoords[j][0])+'\t'+str(tubecoords[j][1])+'\t'+str(tubecoords[j][2])+'\n')
+      for j in range(len(elemlist)):
+        fileout.write(elemlist[j]+'\t'+str(tubecoords[0,j])+'\t'+str(tubecoords[1,j])+'\t'+str(tubecoords[2,j])+'\n')
       fileout.write('space 1_a\n')
       fileout.write('supercell 1 1 1\n')
       fileout.write('full\n')
@@ -780,23 +1017,21 @@ class initStructure:
 
 
   def doAllRots(self):
-    self.doRot1()
-    self.doRot2()
-    self.doRot3()
-    self.doRot4()
+    self.doRot(1)
+    self.doRot(2)
+    self.doRot(3)
+    self.doRot(4)
+    self.doRot(5)
+    self.doRot(6)
 
 
 
-''' 
-This next class will open an olcao.mi and get the resulting
-cell vectors, angles, atom names, positions.
 
-
-''' 
-
- 
-
-print "Beginning Nanotube Creation\n"
+print "\n" 
+printLine()
+printLine()
+print "Beginning Nanotube Creation"
+printLine()
 
 '''     
 Basic Idea:
@@ -807,23 +1042,14 @@ Basic Idea:
  5) Replicate ring upwards
 '''
 
-
-
-#Need to add in a spot to take in chirality and functionalization.
-
-
-newstruct=initStructure(newOLCAOfile.cellVec[0],newOLCAOfile.cellVec[1],newOLCAOfile.cellVec[2])
-newstruct.addEntireStructure(newOLCAOfile.atomicList,newOLCAOfile.positionList)
-
-newstruct.setAllThreePos()
-newstruct.doAllRots()
-
-
-
-
+tube=initStructure()
+tube.parseInputFile()
+tube.setAllPos()
+tube.doAllRots()
 
 print "Time to complete "+str(time.time()-start)+"s."
-
+printLine()
+printLine()
 
 
 
