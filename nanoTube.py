@@ -510,7 +510,6 @@ class initStructure:
     self.orientpos3=np.transpose(np.matrix(self.initPositions,dtype='d'))
     self.orientpos3=np.dot(Rotz(np.pi),self.orientpos3)
 
-
     self.width3=copy.deepcopy(self.width)
     self.orientpos3[0,:]=self.orientpos3[0,:]+self.width[0]
     self.orientpos3[1,:]=self.orientpos3[1,:]+(self.width[1]/2.0)
@@ -550,7 +549,7 @@ class initStructure:
     self.setinitPos6()
 
 
-  def doRot(self,n):
+  def doRot(self,atompositions,celldims,n):
     tuberad=0.0
     ang=0.0
     rotang=0.0
@@ -560,110 +559,20 @@ class initStructure:
       ang=(np.pi*(i-2.0))/(2.0*(i))
       rotang=2*((np.pi/2)-ang)
 
-      if n==1:
-        tuberad=(self.width1[1]/2.0)*np.tan(ang)
-       
-        # Make a temporary copy of the atomic positions
-        temp=copy.deepcopy(self.orientpos1)
-       
-        # Check for chirality
-        if self.chir>0:
-          zshift=(self.chir*self.width1[2])/float(i)
-          for j in range(len(self.corr_atoms)):
-            temp[2,j]=temp[2,j]+((temp[1,j]*zshift)/self.width1[1])
-            if temp[2,j] > self.width1[2]:
-              temp[2,j]=temp[2,j]-self.width1[2]
-            elif temp[2,j]<0.0:
-              temp[2,j]=temp[2,j]+self.width1[2]
-
-
-      elif n==2:
-        tuberad=(self.width2[1]/2.0)*np.tan(ang)
-       
-        # Make a temporary copy of the atomic positions
-        temp=copy.deepcopy(self.orientpos2)
-       
-        # Check for chirality
-        if self.chir>0:
-          zshift=(self.chir*self.width2[2])/float(i)
-          for j in range(len(self.corr_atoms)):
-            temp[2,j]=temp[2,j]+((temp[1,j]*zshift)/self.width2[1])
-            if temp[2,j] > self.width2[2]:
-              temp[2,j]=temp[2,j]-self.width2[2]
-            elif temp[2,j]<0.0:
-              temp[2,j]=temp[2,j]+self.width2[2]
-
-
-      elif n==3:
-        tuberad=(self.width3[1]/2.0)*np.tan(ang)
-       
-        # Make a temporary copy of the atomic positions
-        temp=copy.deepcopy(self.orientpos3)
-       
-        # Check for chirality
-        if self.chir>0:
-          zshift=(self.chir*self.width3[2])/float(i)
-          for j in range(len(self.corr_atoms)):
-            temp[2,j]=temp[2,j]+((temp[1,j]*zshift)/self.width3[1])
-            if temp[2,j] > self.width3[2]:
-              temp[2,j]=temp[2,j]-self.width3[2]
-            elif temp[2,j]<0.0:
-              temp[2,j]=temp[2,j]+self.width3[2]
-
-
-
-      elif n==4:
-        tuberad=(self.width4[1]/2.0)*np.tan(ang)
-       
-        # Make a temporary copy of the atomic positions
-        temp=copy.deepcopy(self.orientpos4)
-       
-        # Check for chirality
-        if self.chir>0:
-          zshift=(self.chir*self.width4[2])/float(i)
-          for j in range(len(self.corr_atoms)):
-            temp[2,j]=temp[2,j]+((temp[1,j]*zshift)/self.width4[1])
-            if temp[2,j] > self.width4[2]:
-              temp[2,j]=temp[2,j]-self.width4[2]
-            elif temp[2,j]<0.0:
-              temp[2,j]=temp[2,j]+self.width4[2]
-
-
-
-      elif n==5:
-        tuberad=(self.width5[1]/2.0)*np.tan(ang)
-       
-        # Make a temporary copy of the atomic positions
-        temp=copy.deepcopy(self.orientpos5)
-       
-        # Check for chirality
-        if self.chir>0:
-          zshift=(self.chir*self.width5[2])/float(i)
-          for j in range(len(self.corr_atoms)):
-            temp[2,j]=temp[2,j]+((temp[1,j]*zshift)/self.width5[1])
-            if temp[2,j] > self.width5[2]:
-              temp[2,j]=temp[2,j]-self.width5[2]
-            elif temp[2,j]<0.0:
-              temp[2,j]=temp[2,j]+self.width5[2]
-
-
-
-      elif n==6:
-        tuberad=(self.width6[1]/2.0)*np.tan(ang)
-       
-        # Make a temporary copy of the atomic positions
-        temp=copy.deepcopy(self.orientpos6)
-       
-        # Check for chirality
-        if self.chir>0:
-          zshift=(self.chir*self.width6[2])/float(i)
-          for j in range(len(self.corr_atoms)):
-            temp[2,j]=temp[2,j]+((temp[1,j]*zshift)/self.width6[1])
-            if temp[2,j] > self.width6[2]:
-              temp[2,j]=temp[2,j]-self.width6[2]
-            elif temp[2,j]<0.0:
-              temp[2,j]=temp[2,j]+self.width6[2]
+      tuberad=(celldims[1]/2.0)*np.tan(ang)
       
+      # Make a temporary copy of the atomic positions
+      temp=copy.deepcopy(atompositions)
+      
+      # Check for chirality
+      if self.chir>0:
+        zshift=(self.chir*celldims[2])/float(i)
+        for j in range(len(self.corr_atoms)):
+          temp[2,j]=temp[2,j]+((temp[1,j]*zshift)/celldims[1])
+          if temp[2,j] > celldims[2]:
+            temp[2,j]=temp[2,j]-celldims[2]
+          elif temp[2,j]<0.0:
+            temp[2,j]=temp[2,j]+celldims[2]
 
 
       # Shift the cell x-values out such that the inner cell face is
@@ -685,47 +594,12 @@ class initStructure:
         if self.chir>0:
           temp[2,:]=temp[2,:]-zshift
 
-          if n==1:
-            for k in range(len(self.corr_atoms)):
-              if temp[2,k]>self.width1[2]:
-                temp[2,k]=temp[2,k]-self.width1[2]
-              elif temp[2,k]<0.0:
-                temp[2,k]=temp[2,k]+self.width1[2]
+          for k in range(len(self.corr_atoms)):
+            if temp[2,k]>celldims[2]:
+              temp[2,k]=temp[2,k]-celldims[2]
+            elif temp[2,k]<0.0:
+              temp[2,k]=temp[2,k]+celldims[2]
 
-          elif n==2:
-            for k in range(len(self.corr_atoms)):
-              if temp[2,k]>self.width2[2]:
-                temp[2,k]=temp[2,k]-self.width2[2]
-              elif temp[2,k]<0.0:
-                temp[2,k]=temp[2,k]+self.width2[2]
-
-          elif n==3:
-            for k in range(len(self.corr_atoms)):
-              if temp[2,k]>self.width3[2]:
-                temp[2,k]=temp[2,k]-self.width3[2]
-              elif temp[2,k]<0.0:
-                temp[2,k]=temp[2,k]+self.width3[2]
-
-          elif n==4:
-            for k in range(len(self.corr_atoms)):
-              if temp[2,k]>self.width4[2]:
-                temp[2,k]=temp[2,k]-self.width4[2]
-              elif temp[2,k]<0.0:
-                temp[2,k]=temp[2,k]+self.width4[2]
-
-          elif n==5:
-            for k in range(len(self.corr_atoms)):
-              if temp[2,k]>self.width5[2]:
-                temp[2,k]=temp[2,k]-self.width5[2]
-              elif temp[2,k]<0.0:
-                temp[2,k]=temp[2,k]+self.width5[2]
-
-          elif n==6:
-            for k in range(len(self.corr_atoms)):
-              if temp[2,k]>self.width6[2]:
-                temp[2,k]=temp[2,k]-self.width6[2]
-              elif temp[2,k]<0.0:
-                temp[2,k]=temp[2,k]+self.width6[2]
 
         # Add the new piece to the existing structure.
         tubecoords=np.append(tubecoords,temp,1)
@@ -738,93 +612,21 @@ class initStructure:
         temp2=copy.deepcopy(tubecoords)
         temp3=copy.deepcopy(elemlist)
 
-        if n==1:
-          for k in range(self.height+1):
-            temp2[2,:]=temp2[2,:]+self.width1[2]
-         
-            tubecoords=np.append(tubecoords,temp2,1)
-            elemlist.extend(list(copy.deepcopy(temp3)))
+        for k in range(self.height+1):
+          temp2[2,:]=temp2[2,:]+celldims[2]
+        
+          tubecoords=np.append(tubecoords,temp2,1)
+          elemlist.extend(list(copy.deepcopy(temp3)))
 
-        elif n==2:
-          for k in range(self.height+1):
-            temp2[2,:]=temp2[2,:]+self.width2[2]
-         
-            tubecoords=np.append(tubecoords,temp2,1)
-            elemlist.extend(list(copy.deepcopy(temp3)))
 
-        elif n==3:
-          for k in range(self.height+1):
-            temp2[2,:]=temp2[2,:]+self.width3[2]
-         
-            tubecoords=np.append(tubecoords,temp2,1)
-            elemlist.extend(list(copy.deepcopy(temp3)))
-
-        elif n==4:
-          for k in range(self.height+1):
-            temp2[2,:]=temp2[2,:]+self.width4[2]
-         
-            tubecoords=np.append(tubecoords,temp2,1)
-            elemlist.extend(list(copy.deepcopy(temp3)))
-
-        elif n==5:
-          for k in range(self.height+1):
-            temp2[2,:]=temp2[2,:]+self.width5[2]
-         
-            tubecoords=np.append(tubecoords,temp2,1)
-            elemlist.extend(list(copy.deepcopy(temp3)))
-
-        elif n==6:
-          for k in range(self.height+1):
-            temp2[2,:]=temp2[2,:]+self.width6[2]
-         
-            tubecoords=np.append(tubecoords,temp2,1)
-            elemlist.extend(list(copy.deepcopy(temp3)))
-
-      if n==1:
-        newtubeheight=self.width1[2]*self.height
-
-      elif n==2:
-        newtubeheight=self.width2[2]*self.height
-
-      elif n==3:
-        newtubeheight=self.width3[2]*self.height
-
-      elif n==4:
-        newtubeheight=self.width4[2]*self.height
-
-      elif n==5:
-        newtubeheight=self.width5[2]*self.height
-
-      elif n==6:
-        newtubeheight=self.width6[2]*self.height
-
+      newtubeheight=celldims[2]*self.height
 
       # Functionalize the nanotube
       if self.func==1:
         # Define functionalization radii
-        delx=0.5
+        delx=0.0025
         funcRadiusIn=tuberad-delx
-
-        if n==1:
-          funcRadiusOut=tuberad+self.width1[0]+delx
-
-        elif n==2:
-          funcRadiusOut=tuberad+self.width2[0]+delx
-
-        elif n==3:
-          funcRadiusOut=tuberad+self.width3[0]+delx
-
-        elif n==4:
-          funcRadiusOut=tuberad+self.width4[0]+delx
-
-        elif n==5:
-          funcRadiusOut=tuberad+self.width5[0]+delx
-
-        elif n==6:
-          funcRadiusOut=tuberad+self.width6[0]+delx
-
-
-
+        funcRadiusOut=tuberad+celldims[0]+delx
 
         # Check for functionalization location
         # INSIDE
@@ -907,12 +709,12 @@ class initStructure:
             for j in range(self.funcNumPart+1):
               if np.random.randint(2)==0:
                 funcAngs=np.random.uniform(low=0.0,high=2.0*np.pi,size=(1,))
-                xmove=funcRadIn-self.funcPartWidth[0]
+                xmove=funcRadiusIn-self.funcPartWidth[0]
                 zpos=np.random.uniform(low=0.0,high=newtubeheight-self.funcPartWidth[2],size=(1,))
               
               else: 
                 funcAngs=np.random.uniform(low=0.0,high=2.0*np.pi,size=(1,))
-                xmove=funcRadOut
+                xmove=funcRadiusOut
                 zpos=np.random.uniform(low=0.0,high=newtubeheight-self.funcPartWidth[2],size=(1,))
          
               tempPartCoords=copy.deepcopy(np.transpose(np.matrix(self.funcinitPos,dtype='d')))
@@ -934,8 +736,8 @@ class initStructure:
                   xpos=funcRadiusIn*np.cos(funcAngs)
                   ypos=funcRadiusIn*np.sin(funcAngs)
                 else:
-                  xpos=funcRadiusIn*np.cos(funcAngs)
-                  ypos=funcRadiusIn*np.sin(funcAngs)
+                  xpos=funcRadiusOut*np.cos(funcAngs)
+                  ypos=funcRadiusOut*np.sin(funcAngs)
 
                 quickvec=np.zeros((3,1),dtype='d')
                 quickvec[0,0]=xpos[0]
@@ -953,31 +755,8 @@ class initStructure:
       xmax=0.0
       ymax=0.0
 
-      if n==1:
-        newcellwidth=2.0*tuberad+2.0*self.width1[0]+30.0
-        fileout=open('NT_'+self.name+'_Face1_'+str(i)+'C'+str(self.chir).replace('.','p')+'_Func'+str(self.func)+'.dat','w')
-
-      elif n==2:
-        newcellwidth=2.0*tuberad+2.0*self.width2[0]+30.0
-        fileout=open('NT_'+self.name+'_Face2_'+str(i)+'C'+str(self.chir).replace('.','p')+'_Func'+str(self.func)+'.dat','w')
-
-      elif n==3:
-        newcellwidth=2.0*tuberad+2.0*self.width3[0]+30.0
-        fileout=open('NT_'+self.name+'_Face3_'+str(i)+'C'+str(self.chir).replace('.','p')+'_Func'+str(self.func)+'.dat','w')
-
-      elif n==4:
-        newcellwidth=2.0*tuberad+2.0*self.width4[0]+30.0
-        fileout=open('NT_'+self.name+'_Face4_'+str(i)+'C'+str(self.chir).replace('.','p')+'_Func'+str(self.func)+'.dat','w')
-
-
-      elif n==5:
-        newcellwidth=2.0*tuberad+2.0*self.width5[0]+30.0
-        fileout=open('NT_'+self.name+'_Face5_'+str(i)+'C'+str(self.chir).replace('.','p')+'_Func'+str(self.func)+'.dat','w')
-
-      elif n==6:
-        newcellwidth=2.0*tuberad+2.0*self.width6[0]+30.0
-        fileout=open('NT_'+self.name+'_Face6_'+str(i)+'C'+str(self.chir).replace('.','p')+'_Func'+str(self.func)+'.dat','w')
-
+      newcellwidth=2.0*tuberad+2.0*celldims[0]+30.0
+      fileout=open('NT_'+self.name+'_Face'+str(n)+'_'+str(i)+'C'+str(self.chir).replace('.','p')+'_Func'+str(self.func)+'.dat','w')
 
       tubecoords[0,:]=tubecoords[0,:]+newcellwidth/2.0
       tubecoords[1,:]=tubecoords[1,:]+newcellwidth/2.0
@@ -998,13 +777,17 @@ class initStructure:
       fileout.close()
 
 
+
+
   def doAllRots(self):
-    self.doRot(1)
-    self.doRot(2)
-    self.doRot(3)
-    self.doRot(4)
-    self.doRot(5)
-    self.doRot(6)
+    self.doRot(self.orientpos1,self.width1,1)
+    self.doRot(self.orientpos2,self.width2,2)
+    self.doRot(self.orientpos3,self.width3,3)
+    self.doRot(self.orientpos4,self.width4,4)
+    self.doRot(self.orientpos5,self.width5,5)
+    self.doRot(self.orientpos6,self.width6,6)
+
+
 
 
 
@@ -1028,6 +811,7 @@ tube=initStructure()
 tube.parseInputFile()
 tube.setAllPos()
 tube.doAllRots()
+
 
 print "Time to complete "+str(time.time()-start)+"s."
 printLine()
