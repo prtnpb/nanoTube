@@ -288,21 +288,31 @@ class initStructure:
     # List of positions of each atom when each face of the parallelpiped
     #  is facing the origin.
     self.orientpos1=np.zeros(1,dtype='d')
+    self.orientpos1a=np.zeros(1,dtype='d')
     self.orientpos2=np.zeros(1,dtype='d')
+    self.orientpos2a=np.zeros(1,dtype='d')
     self.orientpos3=np.zeros(1,dtype='d')
+    self.orientpos3a=np.zeros(1,dtype='d')
     self.orientpos4=np.zeros(1,dtype='d')
+    self.orientpos4a=np.zeros(1,dtype='d')
     self.orientpos5=np.zeros(1,dtype='d')
+    self.orientpos5a=np.zeros(1,dtype='d')
     self.orientpos6=np.zeros(1,dtype='d')
+    self.orientpos6a=np.zeros(1,dtype='d')
 
-    # List of the cell widths in cartesian coordinates. Note that there may
-    #   be multiple sets in here to correspond to rotations about the face
-    #   facing the origin.
+    # List of the cell widths in cartesian coordinates.
     self.width1=[]
+    self.width1a=[]
     self.width2=[]
+    self.width2a=[]
     self.width3=[]
+    self.width3a=[]
     self.width4=[]
+    self.width4a=[]
     self.width5=[]
+    self.width5a=[]
     self.width6=[]
+    self.width6a=[]
 
   def addAtom(self,atom,pos):
     self.initPositions.append(pos[:])
@@ -499,45 +509,84 @@ class initStructure:
     self.orientpos1[1,:]=self.orientpos1[1,:]-self.width[1]/2.0
     self.width1=copy.deepcopy(self.width)
 
+
+    self.width1a=[self.width1[0],self.width1[2],self.width1[1]]
+    self.orientpos1a=np.transpose(np.matrix(self.initPositions,dtype='d'))
+    self.orientpos1a=np.dot(Rotx(np.pi/2.0),self.orientpos1a)
+    self.orientpos1a[1,:]=self.orientpos1a[1,:]+self.width1a[1]/2.0
+        
+
   def setinitPos2(self):
     self.orientpos2=np.transpose(np.matrix(self.initPositions,dtype='d'))
     self.orientpos2=np.dot(Rotz(np.pi/2.0),self.orientpos2)
-
     self.width2=[self.width[1],self.width[0],self.width[2]]
     self.orientpos2[1,:]=self.orientpos2[1,:]+self.width2[1]/2.0
+
+   
+    self.width2a=[self.width2[0],self.width2[2],self.width2[1]]
+    self.orientpos2a=copy.deepcopy(self.orientpos2)
+    self.orientpos2a=np.dot(Rotx(np.pi/2.0),self.orientpos2a)
+    self.orientpos2a[2,:]=self.orientpos2a[2,:]+self.width2a[2]/2.0
+    self.orientpos2a[1,:]=self.orientpos2a[1,:]+self.width2a[1]/2.0
+
+
 
   def setinitPos3(self):
     self.orientpos3=np.transpose(np.matrix(self.initPositions,dtype='d'))
     self.orientpos3=np.dot(Rotz(np.pi),self.orientpos3)
-
     self.width3=copy.deepcopy(self.width)
     self.orientpos3[0,:]=self.orientpos3[0,:]+self.width[0]
     self.orientpos3[1,:]=self.orientpos3[1,:]+(self.width[1]/2.0)
 
 
+    self.width3a=[self.width3[0],self.width3[2],self.width3[1]]
+    self.orientpos3a=copy.deepcopy(self.orientpos3)
+    self.orientpos3a=np.dot(Rotx(np.pi/2.0),self.orientpos3a)
+    self.orientpos3a[2,:]=self.orientpos3a[2,:]+self.width3a[2]/2.0
+    self.orientpos3a[1,:]=self.orientpos3a[1,:]+self.width3a[1]/2.0
+
   def setinitPos4(self):
     self.orientpos4=np.transpose(np.matrix(self.initPositions,dtype='d'))
     self.orientpos4=np.dot(Rotz(0.75*np.pi),self.orientpos4)
-
     self.width4=[self.width[1],self.width[0],self.width[2]]
     self.orientpos4[0,:]=self.orientpos4[0,:]+self.width4[0]   
     self.orientpos4[1,:]=self.orientpos4[1,:]-self.width4[1]/2.0
 
+    self.width4a=[self.width4[0],self.width4[2],self.width4[1]]
+    self.orientpos4a=copy.deepcopy(self.orientpos4)
+    self.orientpos4a=np.dot(Rotx(np.pi/2.0),self.orientpos4a)
+    self.orientpos4a[2,:]=self.orientpos4a[2,:]+self.width4a[2]/2.0
+    self.orientpos4a[1,:]=self.orientpos4a[1,:]+self.width4a[1]/2.0
+
+
   def setinitPos5(self):
     self.orientpos5=np.transpose(np.matrix(self.initPositions,dtype='d'))
     self.orientpos5=np.dot(Roty(np.pi/2),self.orientpos5)
-
     self.width5=[self.width[2],self.width[1],self.width[0]]
     self.orientpos5[0,:]=self.orientpos5[0,:]+self.width5[0]
     self.orientpos5[1,:]=self.orientpos5[1,:]-self.width5[1]/2.0
 
+    self.width5a=[self.width5[0],self.width5[2],self.width5[1]]
+    self.orientpos5a=copy.deepcopy(self.orientpos5)
+    self.orientpos5a=np.dot(Rotx(np.pi/2.0),self.orientpos5a)
+    self.orientpos5a[2,:]=self.orientpos5a[2,:]+self.width5a[2]/2.0
+    self.orientpos5a[1,:]=self.orientpos5a[1,:]+self.width5a[1]/2.0
+
+
+
   def setinitPos6(self):
     self.orientpos6=np.transpose(np.matrix(self.initPositions,dtype='d'))
     self.orientpos6=np.dot(Roty(0.75*np.pi),self.orientpos6)
-
     self.width6=[self.width[2],self.width[1],self.width[0]]
     self.orientpos6[2,:]=self.orientpos6[2,:]+self.width6[2]
     self.orientpos6[1,:]=self.orientpos6[1,:]-self.width6[1]/2.0
+
+    self.width6a=[self.width6[0],self.width6[2],self.width6[1]]
+    self.orientpos6a=copy.deepcopy(self.orientpos6)
+    self.orientpos6a=np.dot(Rotx(np.pi/2.0),self.orientpos6a)
+    self.orientpos6a[2,:]=self.orientpos6a[2,:]+self.width6a[2]/2.0
+    self.orientpos6a[1,:]=self.orientpos6a[1,:]+self.width6a[1]/2.0
+
 
 
   def setAllPos(self):
@@ -781,11 +830,17 @@ class initStructure:
 
   def doAllRots(self):
     self.doRot(self.orientpos1,self.width1,1)
+    self.doRot(self.orientpos1a,self.width1a,'1a')
     self.doRot(self.orientpos2,self.width2,2)
+    self.doRot(self.orientpos2a,self.width2a,'2a')
     self.doRot(self.orientpos3,self.width3,3)
+    self.doRot(self.orientpos3a,self.width3a,'3a')
     self.doRot(self.orientpos4,self.width4,4)
+    self.doRot(self.orientpos4a,self.width4a,'4a')
     self.doRot(self.orientpos5,self.width5,5)
+    self.doRot(self.orientpos5a,self.width5a,'5a')
     self.doRot(self.orientpos6,self.width6,6)
+    self.doRot(self.orientpos6a,self.width6a,'6a')
 
 
 
